@@ -502,7 +502,7 @@ const BannerCanvas = React.forwardRef<HTMLDivElement, BannerCanvasProps>(
             inset: 0,
             borderRadius: "0px",
             border: "1px solid transparent",
-            background: `linear-gradient(#0C0A08, #0C0A08) padding-box,
+            background: `linear-gradient(transparent, transparent) padding-box,
               linear-gradient(135deg, rgba(212, 168, 67, 0.25), rgba(200, 144, 60, 0.12), rgba(139, 104, 64, 0.08)) border-box`,
             pointerEvents: "none" as const,
           }}
