@@ -5,20 +5,21 @@ import { toPng } from "html-to-image";
 /**
  * Downloads the banner as a PNG file by capturing a DOM node.
  *
- * @param elementRef - React ref to the banner DOM node
+ * @param element - React ref to the banner DOM node
  * @param username - The Discord username (used in the filename)
+ * @param pixelRatio - Scaling factor for exporting high-res output
  */
 export async function downloadBanner(
   element: HTMLElement,
-  username: string
+  username: string,
+  pixelRatio: number = 2
 ): Promise<void> {
   try {
     // Generate PNG data URL from the DOM node
     const dataUrl = await toPng(element, {
       quality: 1.0,
-      pixelRatio: 2, // 2x for retina-quality output
+      pixelRatio, // Adjustable scaling (e.g. 1x, 2x, 3x)
       cacheBust: true,
-      // Ensure fonts are embedded
       fontEmbedCSS: undefined,
       skipAutoScale: false,
     });

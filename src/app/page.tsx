@@ -1,134 +1,101 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useRef, MouseEvent } from "react";
+import { EditorProvider, useEditor, useEditorActions } from "@/lib/editorStore";
 import HeroSection from "@/components/HeroSection";
-import UsernameForm from "@/components/UsernameForm";
+import AssetLibrary from "@/components/editor/AssetLibrary";
+import BannerCanvas from "@/components/BannerCanvas";
+import LayerPanel from "@/components/editor/LayerPanel";
+import PropertiesPanel from "@/components/editor/PropertiesPanel";
+import EditorToolbar from "@/components/editor/EditorToolbar";
 import BannerPreview from "@/components/BannerPreview";
+import { AnimatePresence } from "framer-motion";
 
-/**
- * Main page for the PrismaX Banner Generator.
- *
- * Flow:
- * 1. User sees hero section with branding, banner image, and description
- * 2. User enters Discord username and optionally uploads profile image
- * 3. Clicks "Generate Banner" → loading animation
- * 4. Banner preview appears with download option
- */
-export default function Home() {
-  const [generatedUsername, setGeneratedUsername] = useState("");
-  const [generatedProfileImage, setGeneratedProfileImage] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showBanner, setShowBanner] = useState(false);
+function EditorWorkspace() {
+  const { state } = useEditor();
+  const { selectLayer } = useEditorActions();
+  const workspaceRef = useRef<HTMLDivElement>(null);
 
-  const handleGenerate = useCallback(async (username: string, profileImage: string | null) => {
-    setIsGenerating(true);
-    setShowBanner(false);
-
-    // Simulate generation time for a smooth UX
-    // (the banner is rendered client-side, but we add a brief delay
-    // so the loading state feels intentional and premium)
-    await new Promise((resolve) => setTimeout(resolve, 1800));
-
-    setGeneratedUsername(username);
-    setGeneratedProfileImage(profileImage);
-    setShowBanner(true);
-    setIsGenerating(false);
-  }, []);
+  // Clicking empty workspace area deselects the current layer
+  const handleWorkspaceClick = (e: MouseEvent) => {
+    if (e.target === e.currentTarget || (e.target as HTMLElement).id === "canvas-container") {
+      selectLayer(null);
+    }
+  };
 
   return (
-    <main className="min-h-screen flex flex-col" id="prismax-banner-generator">
-      {/* Hero Section */}
+    <div className="flex flex-col min-h-screen bg-[#0C0A08] text-[#F0E8D8] overflow-hidden">
+      {/* Top Header Bar */}
       <HeroSection />
 
-      {/* Username Input Form */}
-      <UsernameForm onGenerate={handleGenerate} isGenerating={isGenerating} />
+      {/* Editor Main Grid */}
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Left Side: Asset Library */}
+        <AssetLibrary />
 
-      {/* Loading State */}
-      <AnimatePresence>
-        {isGenerating && (
-          <motion.div
-            className="flex flex-col items-center gap-4 py-12"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            {/* Animated loading indicator - gold themed */}
-            <div className="relative w-16 h-16">
-              <div
-                className="absolute inset-0 rounded-full"
-                style={{
-                  border: "2px solid transparent",
-                  borderTopColor: "#D4A843",
-                  borderRightColor: "#A07830",
-                  animation: "spin 1s linear infinite",
-                }}
-              />
-              <div
-                className="absolute inset-2 rounded-full"
-                style={{
-                  border: "2px solid transparent",
-                  borderBottomColor: "#F0D078",
-                  borderLeftColor: "#8B6840",
-                  animation: "spin 1.5s linear infinite reverse",
-                }}
-              />
-              <div
-                className="absolute inset-4 rounded-full"
-                style={{
-                  background:
-                    "radial-gradient(circle, rgba(212,168,67,0.3), transparent)",
-                }}
-              />
-            </div>
-            <p className="text-prismax-muted text-sm font-medium animate-pulse">
-              Crafting your premium banner...
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Banner Preview */}
-      <AnimatePresence>
-        {showBanner && !isGenerating && (
-          <motion.div
-            key="banner-preview"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            <BannerPreview username={generatedUsername} profileImage={generatedProfileImage} />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Footer */}
-      <footer className="mt-auto py-8 text-center">
-        <motion.div
-          className="flex flex-col items-center gap-2"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
+        {/* Center: Canvas Workspace */}
+        <div
+          ref={workspaceRef}
+          onClick={handleWorkspaceClick}
+          className="flex-1 flex flex-col items-center justify-start overflow-auto p-8 relative bg-[#060504] select-none"
+          id="canvas-container"
+          style={{
+            backgroundImage: "radial-gradient(rgba(212, 168, 67, 0.015) 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
         >
-          <div className="flex items-center gap-2 text-xs text-prismax-muted/40">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-                fill="currentColor"
-                opacity="0.3"
-              />
-            </svg>
-            <span>Built with conviction by the PrismaX community</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-                fill="currentColor"
-                opacity="0.3"
-              />
-            </svg>
+          {/* Zoom & Action Controls */}
+          <EditorToolbar />
+
+          {/* Scaled Canvas Container */}
+          <div
+            className="canvas-viewport flex items-center justify-center relative mt-4 shadow-2xl transition-all duration-300"
+            style={{
+              width: `${state.canvasWidth * state.canvasZoom}px`,
+              height: `${state.canvasHeight * state.canvasZoom}px`,
+              minWidth: `${state.canvasWidth * state.canvasZoom}px`,
+              minHeight: `${state.canvasHeight * state.canvasZoom}px`,
+            }}
+          >
+            <div
+              style={{
+                width: `${state.canvasWidth}px`,
+                height: `${state.canvasHeight}px`,
+                transform: `scale(${state.canvasZoom})`,
+                transformOrigin: "top left",
+                position: "absolute",
+                top: 0,
+                left: 0,
+              }}
+            >
+              <BannerCanvas />
+            </div>
           </div>
-        </motion.div>
-      </footer>
-    </main>
+        </div>
+
+        {/* Right Side: Double Stack (Layer List & Properties) */}
+        <div className="w-[340px] flex flex-col border-l border-prismax-border/30 bg-[#141210] h-full overflow-hidden select-none">
+          <div className="flex-1 overflow-y-auto border-b border-prismax-border/20">
+            <LayerPanel />
+          </div>
+          <div className="flex-1 overflow-y-auto">
+            <PropertiesPanel />
+          </div>
+        </div>
+      </div>
+
+      {/* Popups & Modals */}
+      <AnimatePresence>
+        {state.showExportModal && <BannerPreview />}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <EditorProvider>
+      <EditorWorkspace />
+    </EditorProvider>
   );
 }
