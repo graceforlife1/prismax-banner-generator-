@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import BannerCanvas from "./BannerCanvas";
 import { downloadBanner } from "@/lib/downloadBanner";
@@ -16,8 +16,25 @@ interface BannerPreviewProps {
  */
 export default function BannerPreview({ username, profileImage }: BannerPreviewProps) {
   const bannerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState("");
+  const [scale, setScale] = useState(0.5);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    
+    const updateScale = () => {
+      if (containerRef.current) {
+        const width = containerRef.current.getBoundingClientRect().width;
+        setScale(width / 1600);
+      }
+    };
+
+    updateScale();
+    window.addEventListener("resize", updateScale);
+    return () => window.removeEventListener("resize", updateScale);
+  }, []);
 
   const handleDownload = async () => {
     if (!bannerRef.current) return;
@@ -69,28 +86,29 @@ export default function BannerPreview({ username, profileImage }: BannerPreviewP
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
       >
-        {/* Banner Container - scrollable on mobile */}
-        <div className="overflow-x-auto rounded-xl">
-          <div className="min-w-[800px]" style={{ aspectRatio: "16 / 9" }}>
+        {/* Banner Container - fully responsive, scales dynamically */}
+        <div className="rounded-xl overflow-hidden bg-[#0C0A08]">
+          <div
+            ref={containerRef}
+            style={{
+              width: "100%",
+              position: "relative",
+              aspectRatio: "16 / 9",
+              overflow: "hidden",
+            }}
+          >
             <div
               style={{
-                transform: "scale(1)",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "1600px",
+                height: "900px",
+                transform: `scale(${scale})`,
                 transformOrigin: "top left",
-                width: "100%",
               }}
             >
-              {/* Scale the 1600x900 banner to fit the container */}
-              <div
-                style={{
-                  width: "1600px",
-                  height: "900px",
-                  transform: "scale(var(--banner-scale, 0.5))",
-                  transformOrigin: "top left",
-                }}
-                className="banner-scale-wrapper"
-              >
-                <BannerCanvas ref={bannerRef} username={username} profileImage={profileImage} />
-              </div>
+              <BannerCanvas ref={bannerRef} username={username} profileImage={profileImage} />
             </div>
           </div>
         </div>
